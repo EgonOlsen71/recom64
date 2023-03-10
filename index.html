@@ -1,0 +1,115 @@
+<html>
+<head>
+	<title>Recom64 - by Gert D&ouml;ring & EgonOlsen71</title>
+	<script id='_compiledCode' src='++recom64.js' type='text/javascript'></script>
+	<style>
+	body {
+	  background-color: black;
+	  color: lightgrey;
+	  font-family: monospace;
+	  font-size: 130%;
+	}
+
+	h2 {
+	  color: lightgreen;
+	}
+
+	h3 {
+	  color: yellow;
+	}
+	
+	a {
+		color: yellow;
+	}
+	
+	p {
+		color: lightgrey;
+	}	
+  
+	p a {
+		color: lightgrey;
+	}
+	
+	input,
+	select,
+	button,
+	textarea {
+	  font-size: 110%;
+	}
+	</style>
+</head>
+<body>
+<h2>Recom64</h2>
+<h3>by Gert D&ouml;ring, published in <a target="_blank" href="mikrocompiler.pdf">RUN 08/86</a></h3>
+<h3>Compiled to Javascript using <a target="_blank" href="https://www.c64-wiki.com/wiki/MOSpeed">MOSpeed by EgonOlsen71</a></h3>
+<p>
+	Originally coded in BASIC V2, this is a so called "recompactor" for the Commodore 64.<br/>
+	It takes any BASIC program and reformats it for better readability. You can find more details<br/>
+	in the <a target="_blank" href="recom64.pdf">(german) description</a> from back in the days.<br/>
+</p>
+<p>
+	This version has been compiled from BASIC V2 into Javascript using MOSpeed.<br/>
+	So it runs and reformats natively in your browser.
+</p>
+<p>
+	Error handling of this version is quite limited. It will detect and report errors,<br/>but it won't display exactly where they were.
+</p>
+<p>
+	The recompactor/formatter takes PRG files only. Here is an example written in BASIC V2 that you can use for testing:
+	<ul>
+		<li><a href="oneliner.prg">Simple one-liner</a></li>
+	</ul>
+</p>
+<p>
+	Enough talking, let's recompact some things...<br/><br/>
+</p>
+<p>
+<form name="fileselect" enctype="multipart/form-data">
+	<input type="file" name="prg" id="prg" /><br/><br/>
+	<button type="button" onclick="recomp()">Recompact</button>
+</form>
+</p>
+<p id="output"></p>
+
+<script>
+function recomp() {
+  var files = document.getElementById("prg").files;
+  var out = document.getElementById("output");
+  out.innerHTML = "";
+  for(var file of files) {
+	console.log("Formatting: "+file.name);
+    var reader = new FileReader();
+    reader.onload = (e) => {
+        var blob = new Uint8Array(e.target.result);
+		var compy = new Compiled(blob);
+		try {
+			compy.execute();
+		} catch(err) {
+			compy.VAR_ER=9001;
+		}
+		if (compy.VAR_ER==0) {
+			var size = compy.blobOut.length;
+			var result = new Uint8Array(size)
+			for(var i=0; i<size; i++) {
+				result[i]=compy.blobOut[i];
+			}
+			blob = new Blob([result.buffer], {type: "application/octet-binary"});
+			var dl = document.createElement('a');
+			dl.setAttribute('download', "+"+file.name);
+			dl.setAttribute('href', window.URL.createObjectURL(blob));
+			dl.style.display = 'none';
+			out.innerHTML = "Formatting succesful!<br/>Memory used: "+compy.blobOut.length+" bytes!";
+			document.body.appendChild(dl);
+			dl.click();
+			document.body.removeChild(dl);
+		} else {
+			out.innerHTML = "Formatting failed with "+compy.VAR_ER+" errors!<br/>Check your input program!";
+			alert("Formatting failed with "+compy.VAR_ER+" errors!");
+		}
+    };
+	reader.readAsArrayBuffer(file);
+  }
+}
+</script>
+</body>
+</html>
